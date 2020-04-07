@@ -17,14 +17,6 @@ if [ ! -f "include/json.hpp" ]; then
     wget -P include/ https://github.com/nlohmann/json/releases/download/v3.7.3/json.hpp
 fi
 
-# Eigen
-if [ ! -d "include/Eigen" ]; then
-    wget https://gitlab.com/libeigen/eigen/-/archive/3.3.7/eigen-3.3.7.tar.gz
-    tar -xvzf eigen-3.3.7.tar.gz
-    mv eigen-3.3.7/Eigen include/
-    rm -rf eigen-3.3.7
-fi
-
 # Spline
 if [ ! -f "include/spline.h" ]; then
     wget -P include/ hhttps://kluge.in-chemnitz.de/opensource/spline/spline.h

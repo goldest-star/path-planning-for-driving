@@ -8,7 +8,16 @@ set(CXX_FLAGS "-Wall")
 set(CMAKE_CXX_FLAGS, "${CXX_FLAGS}")
 
 include_directories(include)
-set(sources src/main.cpp)
+set(sources
+    src/main.cpp
+    src/helpers.cpp
+    src/perception.cpp
+    src/planner.cpp
+    src/controller.cpp
+    src/helpers.h
+    src/controller.h
+    src/planner.h
+    src/perception.h)
 
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin") 

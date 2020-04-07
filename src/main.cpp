@@ -7,10 +7,12 @@
 #include "Eigen/QR"
 #include "helpers.h"
 #include "json.hpp"
+#include "spdlog/spdlog.h"
 #include "spline.h"
 
 // for convenience
 using nlohmann::json;
+using std::exception;
 using std::string;
 using std::vector;
 
@@ -18,57 +20,43 @@ int main() {
   uWS::Hub h;
 
   // Load up map values for waypoint's x,y,s and d normalized normal vectors
-  vector<double> map_waypoints_x;
-  vector<double> map_waypoints_y;
-  vector<double> map_waypoints_s;
-  vector<double> map_waypoints_dx;
-  vector<double> map_waypoints_dy;
+  // x, y, s, dx, dy
+  std::array<vector<double>, 5> map_waypoints;
 
-  // Waypoint map to read from
-  string map_file_ = "../data/highway_map.csv";
+  // Map data safeguard
+  struct PPException : public exception {
+    const char *what() const throw() {
+      return "Unable to access highway map file!";
+    }
+  };
+
+  if (!read_map_data("../data/highway_map.csv", map_waypoints)) {
+    spdlog::error("Unable to access highway map file!");
+    throw PPException();
+  }
   // The max s value before wrapping around the track back to 0
   double max_s = 6945.554;
-
-  std::ifstream in_map_(map_file_.c_str(), std::ifstream::in);
-
-  string line;
-  while (getline(in_map_, line)) {
-    std::istringstream iss(line);
-    double x;
-    double y;
-    float s;
-    float d_x;
-    float d_y;
-    iss >> x;
-    iss >> y;
-    iss >> s;
-    iss >> d_x;
-    iss >> d_y;
-    map_waypoints_x.push_back(x);
-    map_waypoints_y.push_back(y);
-    map_waypoints_s.push_back(s);
-    map_waypoints_dx.push_back(d_x);
-    map_waypoints_dy.push_back(d_y);
-  }
 
   // Lanes are numbered (0 | 1 | 2)
   // Start on lane 1 (middle lane)
   int lane = 1;
 
   // Inicial velocity, and also reference velocity to target.
-  double current_vel = 0.0;  // mph
-  const double target_vel = 49.7;
-  const double vel_delta = 3 * .224;  // 5m/s
+  double current_vel = 0.0;               // mph
+  const double target_vel = 49.7;         // mph
+  const double vel_delta = 3 * .224;      // 5m/s
+  const double controller_refresh = .02;  // second
+  const float lane_width = 4;             // m
+  const double security_dist = 30;        // m
 
   // True when the ego-car is changing lane.
   bool is_changing_lane = false;
   double end_change_lane_s = 0.0;
 
-  h.onMessage([&map_waypoints_x, &map_waypoints_y, &map_waypoints_s,
-               &map_waypoints_dx, &map_waypoints_dy, &lane, &current_vel,
-               &vel_delta, &target_vel](uWS::WebSocket<uWS::SERVER> ws,
-                                        char *data, size_t length,
-                                        uWS::OpCode opCode) {
+  h.onMessage([&map_waypoints, &lane, &current_vel, &vel_delta, &target_vel,
+               &controller_refresh, &lane_width,
+               &security_dist](uWS::WebSocket<uWS::SERVER> ws, char *data,
+                               size_t length, uWS::OpCode opCode) {
     // "42" at the start of the message means there's a websocket message event.
     // The 4 signifies a websocket message
     // The 2 signifies a websocket event
@@ -115,8 +103,6 @@ int main() {
           vector<double> ahead_dist = {std::numeric_limits<double>::infinity(),
                                        std::numeric_limits<double>::infinity(),
                                        std::numeric_limits<double>::infinity()};
-          const float lane_width = 4;
-          const double security_dist = 30;
 
           // Loop on obstacles (vehicles) detected with sensor fusion
           for (uint i = 0; i < sensor_fusion.size(); i++) {
@@ -126,8 +112,9 @@ int main() {
             double check_car_s = sensor_fusion[i][5];
             float d = sensor_fusion[i][6];
             double check_speed = sqrt(pow(vx, 2) + pow(vy, 2));
-            check_car_s += ((double)prev_size * .02 * check_speed);
-            int lane_ = (int)(d / lane_width);
+            check_car_s += (static_cast<double>(prev_size) *
+                            controller_refresh * check_speed);
+            int lane_ = static_cast<int>(d / lane_width);
             // Check if there is a car ahead of us in this lane
             if ((check_car_s >= car_s - 5) &&
                 (check_car_s < car_s + security_dist)) {
@@ -195,14 +182,14 @@ int main() {
 
           // In Frenet coords, add 30m spaced waypoints ahead of starting ref
           vector<double> next_wp0 =
-              getXY(car_s + 30, (2 + 4 * lane), map_waypoints_s,
-                    map_waypoints_x, map_waypoints_y);
+              getXY(car_s + 30, lane_width * (lane + 0.5), map_waypoints[2],
+                    map_waypoints[0], map_waypoints[1]);
           vector<double> next_wp1 =
-              getXY(car_s + 60, (2 + 4 * lane), map_waypoints_s,
-                    map_waypoints_x, map_waypoints_y);
+              getXY(car_s + 60, lane_width * (lane + 0.5), map_waypoints[2],
+                    map_waypoints[0], map_waypoints[1]);
           vector<double> next_wp2 =
-              getXY(car_s + 90, (2 + 4 * lane), map_waypoints_s,
-                    map_waypoints_x, map_waypoints_y);
+              getXY(car_s + 90, lane_width * (lane + 0.5), map_waypoints[2],
+                    map_waypoints[0], map_waypoints[1]);
 
           ptsx.push_back(next_wp0[0]);
           ptsx.push_back(next_wp1[0]);
@@ -244,7 +231,8 @@ int main() {
           // Fill up the rest of our planner, force 50 points
           for (uint i = 1; i <= 50 - previous_path_x.size(); i++) {
             // Miles per hours --> meters / sec
-            double N = (target_dist / (.02 * current_vel / 2.24));
+            double N =
+                (target_dist / (controller_refresh * current_vel / 2.24));
             double x_point = x_add_on + target_x / N;
             double y_point = s(x_point);
             x_add_on = x_point;
@@ -282,7 +270,7 @@ int main() {
 
   h.onConnection(
       [&h, &current_vel](uWS::WebSocket<uWS::SERVER> ws, uWS::HttpRequest req) {
-        std::cout << "Connected!!!" << std::endl;
+        spdlog::info("Environment session connected!");
         // Ensure that new driving sessions starts with zero velocity
         current_vel = 0.0;
       });
@@ -290,14 +278,14 @@ int main() {
   h.onDisconnection([&h](uWS::WebSocket<uWS::SERVER> ws, int code,
                          char *message, size_t length) {
     ws.close();
-    std::cout << "Disconnected" << std::endl;
+    spdlog::info("Disconnected from session");
   });
 
   int port = 4567;
   if (h.listen(port)) {
-    std::cout << "Listening to port " << port << std::endl;
+    spdlog::info("Listening to port {}", port);
   } else {
-    std::cerr << "Failed to listen to port" << std::endl;
+    spdlog::error("Failed to listen to port {}", port);
     return -1;
   }
 

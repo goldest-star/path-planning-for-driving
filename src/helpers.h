@@ -132,7 +132,8 @@ vector<double> getXY(double s, double d, const vector<double> &maps_s,
                      const vector<double> &maps_y) {
   int prev_wp = -1;
 
-  while (s > maps_s[prev_wp + 1] && (prev_wp < (int)(maps_s.size() - 1))) {
+  while (s > maps_s[prev_wp + 1] &&
+         (prev_wp < static_cast<int>(maps_s.size() - 1))) {
     ++prev_wp;
   }
 
@@ -152,6 +153,40 @@ vector<double> getXY(double s, double d, const vector<double> &maps_s,
   double y = seg_y + d * sin(perp_heading);
 
   return {x, y};
+}
+
+bool read_map_data(std::string filename,
+                   std::array<vector<double>, 5> &map_waypoints) {
+  // Get file of map
+  std::ifstream in_map_(filename.c_str(), std::ifstream::in);
+  //  Return if we can't open the file
+  if (!in_map_) {
+    return false;
+  }
+
+  // Declare single line of map file
+  std::string line;
+
+  // Run over each single line
+  while (getline(in_map_, line)) {
+    std::istringstream iss(line);
+    // Declaration
+    double x, y;
+    float s, d_x, d_y;
+    // Read data from current line to values
+    iss >> x;
+    iss >> y;
+    iss >> s;
+    iss >> d_x;
+    iss >> d_y;
+    // Add waypoints
+    map_waypoints[0].push_back(x);
+    map_waypoints[1].push_back(y);
+    map_waypoints[2].push_back(s);
+    map_waypoints[3].push_back(d_x);
+    map_waypoints[4].push_back(d_y);
+  }
+  return true;
 }
 
 #endif  // HELPERS_H

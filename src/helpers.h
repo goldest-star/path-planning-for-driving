@@ -27,12 +27,12 @@ class Helpers {
   double distance(double x1, double y1, double x2, double y2);
 
   // Calculate closest waypoint to current x, y position
-  int ClosestWaypoint(double x, double y, const vector<double> &maps_x,
-                      const vector<double> &maps_y);
+  uint ClosestWaypoint(double x, double y, const vector<double> &maps_x,
+                       const vector<double> &maps_y);
 
   // Returns next waypoint of the closest waypoint
-  int NextWaypoint(double x, double y, double theta,
-                   const vector<double> &maps_x, const vector<double> &maps_y);
+  uint NextWaypoint(double x, double y, double theta,
+                    const vector<double> &maps_x, const vector<double> &maps_y);
 
   // Transform from Cartesian x,y coordinates to Frenet s,d coordinates
   vector<double> getFrenet(double x, double y, double theta,

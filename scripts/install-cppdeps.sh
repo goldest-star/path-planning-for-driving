@@ -19,7 +19,7 @@ fi
 
 # Spline
 if [ ! -f "include/spline.h" ]; then
-    wget -P include/ hhttps://kluge.in-chemnitz.de/opensource/spline/spline.h
+    wget -P include/ https://kluge.in-chemnitz.de/opensource/spline/spline.h
 fi
 
 # spdlog
@@ -28,4 +28,12 @@ if [ ! -d "include/spdlog" ]; then
     tar -xvzf v1.5.0.tar.gz
     mv spdlog-1.5.0/include/spdlog include/
     rm -rf v1.5.0.tar.gz
+fi
+
+# Catch
+if [ ! -d "lib" ]; then
+    mkdir lib
+fi
+if [ ! -f "lib/catch.hpp" ]; then
+    wget -P lib/ https://github.com/catchorg/Catch2/releases/download/v2.11.3/catch.hpp
 fi

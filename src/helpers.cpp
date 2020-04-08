@@ -26,12 +26,12 @@ double Helpers::distance(double x1, double y1, double x2, double y2) {
 }
 
 // Calculate closest waypoint to current x, y position
-int Helpers::ClosestWaypoint(double x, double y, const vector<double> &maps_x,
-                             const vector<double> &maps_y) {
+uint Helpers::ClosestWaypoint(double x, double y, const vector<double> &maps_x,
+                              const vector<double> &maps_y) {
   double closestLen = 100000;  // large number
-  int closestWaypoint = 0;
+  uint closestWaypoint = 0;
 
-  for (int i = 0; i < maps_x.size(); ++i) {
+  for (uint i = 0; i < maps_x.size(); ++i) {
     double map_x = maps_x[i];
     double map_y = maps_y[i];
     double dist = distance(x, y, map_x, map_y);
@@ -45,10 +45,10 @@ int Helpers::ClosestWaypoint(double x, double y, const vector<double> &maps_x,
 }
 
 // Returns next waypoint of the closest waypoint
-int Helpers::NextWaypoint(double x, double y, double theta,
-                          const vector<double> &maps_x,
-                          const vector<double> &maps_y) {
-  int closestWaypoint = ClosestWaypoint(x, y, maps_x, maps_y);
+uint Helpers::NextWaypoint(double x, double y, double theta,
+                           const vector<double> &maps_x,
+                           const vector<double> &maps_y) {
+  uint closestWaypoint = ClosestWaypoint(x, y, maps_x, maps_y);
 
   double map_x = maps_x[closestWaypoint];
   double map_y = maps_y[closestWaypoint];

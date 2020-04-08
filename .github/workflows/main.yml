@@ -1,0 +1,48 @@
+name: cpp-build
+
+on: push
+
+jobs:
+  build:
+    name: ${{ matrix.config.name }}
+    runs-on: ${{ matrix.config.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        config:
+        - {
+            name: "Ubuntu Latest GCC",
+            os: ubuntu-latest,
+            script: "scripts/install-linux.sh"
+          }
+        - {
+            name: "macOS Latest Clang",
+            os: macos-latest,
+            script: "scripts/install-mac.sh"
+          }
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install dependencies
+        env:
+          DEPS_SCRIPT: ${{ matrix.config.script }}
+        run: |
+          bash $DEPS_SCRIPT
+      - name: Build project
+        run: |
+          mkdir build && cd build
+          cmake .. && make
+      - name: Run unittests
+        run: |
+          build/tests
+
+  clang-format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Run clang-format and diffcheck the patch
+        run: |
+          clang-format --version
+          bash scripts/format-project.sh
+          mkdir -p patches
+          if git diff --patch --exit-code > patches/clang-format.patch; then echo "clang-format is respected"; else echo "Changes required by clang-format!"; false; fi

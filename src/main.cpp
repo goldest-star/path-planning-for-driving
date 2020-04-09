@@ -1,6 +1,7 @@
 #include <uWS/uWS.h>
 #include <string>
 #include <vector>
+#include "constants.hpp"
 #include "controller.h"
 #include "helpers.h"
 #include "json.hpp"
@@ -12,6 +13,7 @@ using nlohmann::json;
 using std::exception;
 using std::string;
 using std::vector;
+using namespace constants;
 
 Helpers helpers;
 
@@ -36,33 +38,19 @@ int main() {
 
   // Lanes are numbered (0 | 1 | 2)
   // Start on lane 1 (middle lane)
-  uint lane = 1;
+  int lane = 1;
 
   // Inicial velocity in mph, and also reference velocity to target.
   double velocity = 0.0;
-  // Distance in meters between points that will be interpolated using spline
-  const float spline_dist = 30;
-  // Target velocity (mph)
-  const double target_vel = 49.9;
-  // Velocity step (mph)
-  const double vel_step = 0.7;
-  // Refresh period in seconds
-  const double refresh = .02;  // 50Hz
-  // Lane width in meters
-  const float lane_width = 4;
-  // Margin in meters with vehicle ahead before action in required
-  const double front_margin = 30;
-  // Margin in meters with vehicle behind before action in required
-  const double rear_margin = 5;
 
   // Instantiate the motion planner and controller
-  Planner motion_planner(spline_dist, front_margin, rear_margin, lane_width);
-  Controller controller(vel_step, lane_width, refresh, map_waypoints);
+  Planner behavior_planner(FRONT_MARGIN, REAR_MARGIN, LANE_WIDTH);
+  Controller controller(VELOCITY_STEP, LANE_WIDTH, REFRESH, SPLINE_DIST,
+                        map_waypoints);
 
-  h.onMessage([&lane, &velocity, &target_vel, &refresh, &spline_dist,
-               &motion_planner, &controller](uWS::WebSocket<uWS::SERVER> ws,
-                                             char *data, size_t length,
-                                             uWS::OpCode opCode) {
+  h.onMessage([&lane, &velocity, &behavior_planner, &controller](
+                  uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length,
+                  uWS::OpCode opCode) {
     // "42" at the start of the message means there's a websocket message event.
     // The 4 signifies a websocket message
     // The 2 signifies a websocket event
@@ -101,13 +89,12 @@ int main() {
           }
 
           // Perception
-          motion_planner.sense(sensor_fusion,
-                               static_cast<double>(prev_size) * refresh, car_s);
+          auto delta_t = static_cast<double>(prev_size) * REFRESH;
+          behavior_planner.sense(sensor_fusion, delta_t, car_s);
 
           // Motion planning
-          float spline_dist_ = spline_dist;
-          double target_vel_ = target_vel;
-          motion_planner.update(lane, target_vel_, spline_dist_);
+          auto target_vel_ = TARGET_VELOCITY;
+          behavior_planner.update(lane, target_vel_);
 
           // Let controller update its information
           controller.update_readings(car_x, car_y, car_yaw, velocity, car_s,
@@ -116,7 +103,7 @@ int main() {
           velocity = controller.update_velocity(target_vel_);
           // Compute the trajectory
           std::array<vector<double>, 2> next_coords =
-              controller.get_trajectory(lane, spline_dist_);
+              controller.get_trajectory(lane);
 
           json msgJson;
 

@@ -22,7 +22,7 @@ void PerceptionModule::update(const vector<vector<double> > &sensor_fusion,
                               const double &delta_t, const double &car_s) {
   PerceptionModule::reset_env();
   // Loop on obstacles (vehicles) detected with sensor fusion
-  for (uint i = 0; i < sensor_fusion.size(); i++) {
+  for (uint i = 0; i < sensor_fusion.size(); ++i) {
     // Check vehicle position and motion
     double car_s_ = sensor_fusion[i][5];
     float d_ = sensor_fusion[i][6];

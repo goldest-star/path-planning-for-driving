@@ -38,17 +38,17 @@ int main() {
 
   // Lanes are numbered (0 | 1 | 2)
   // Start on lane 1 (middle lane)
-  int lane = 1;
+  int target_lane = 1;
 
   // Inicial velocity in mph, and also reference velocity to target.
   double velocity = 0.0;
 
   // Instantiate the motion planner and controller
-  Planner behavior_planner(FRONT_MARGIN, REAR_MARGIN, LANE_WIDTH);
-  Controller controller(VELOCITY_STEP, LANE_WIDTH, REFRESH, SPLINE_DIST,
-                        map_waypoints);
+  Planner behavior_planner(FRONT_MARGIN, REAR_MARGIN, LANE_WIDTH, CHANGE_VEL);
+  Controller controller(VELOCITY_STEP, LANE_WIDTH, REFRESH, INTERP_HORIZON,
+                        INTERP_INTERVAL, NB_WAYPOINTS, map_waypoints);
 
-  h.onMessage([&lane, &velocity, &behavior_planner, &controller](
+  h.onMessage([&target_lane, &velocity, &behavior_planner, &controller](
                   uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length,
                   uWS::OpCode opCode) {
     // "42" at the start of the message means there's a websocket message event.
@@ -69,6 +69,7 @@ int main() {
           double car_x = j[1]["x"];
           double car_y = j[1]["y"];
           double car_s = j[1]["s"];
+          double car_d = j[1]["d"];
           double car_yaw = j[1]["yaw"];
 
           // Previous path data given to the Planner
@@ -94,7 +95,7 @@ int main() {
 
           // Motion planning
           auto target_vel_ = TARGET_VELOCITY;
-          behavior_planner.update(lane, target_vel_);
+          behavior_planner.update(target_lane, target_vel_, car_d);
 
           // Let controller update its information
           controller.update_readings(car_x, car_y, car_yaw, velocity, car_s,
@@ -103,7 +104,7 @@ int main() {
           velocity = controller.update_velocity(target_vel_);
           // Compute the trajectory
           std::array<vector<double>, 2> next_coords =
-              controller.get_trajectory(lane);
+              controller.get_trajectory(target_lane);
 
           json msgJson;
 

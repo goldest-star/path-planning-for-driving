@@ -4,12 +4,17 @@
  * Constructor.
  */
 Controller::Controller(const double &vel_delta, const float &lwidth,
-                       const float &refresh_period, const float &t_spline_dist,
+                       const float &refresh_period,
+                       const float &t_interp_horizon,
+                       const float &t_interp_interval,
+                       const uint &t_nb_waypoints,
                        const array<vector<double>, 5> &map_waypoints) {
   vel_step = vel_delta;
   lane_width = lwidth;
   refresh = refresh_period;
-  spline_dist = t_spline_dist;
+  interp_horizon = t_interp_horizon;
+  interp_interval = t_interp_interval;
+  nb_waypoints = t_nb_waypoints;
   waypoints = map_waypoints;
 }
 
@@ -64,16 +69,15 @@ std::array<vector<double>, 2> Controller::extrapolate_trajectory() {
   }
 
   // Spline points
-  double target_x = 10.0;
-  double target_y = s(target_x);
-  double target_dist = sqrt(pow(target_x, 2) + pow(target_y, 2));
+  double target_y = s(interp_horizon);
+  double target_dist = sqrt(pow(interp_horizon, 2) + pow(target_y, 2));
   double x_add_on = 0;
   // Miles per hours --> meters / sec
   double N = (target_dist / (refresh * velocity / 2.24));
 
   // Fill up the rest of our planner, force 50 points
-  for (uint i = 1; i <= 50 - prev_xs.size(); ++i) {
-    double x_point = x_add_on + target_x / N;
+  for (uint i = 1; i <= nb_waypoints - prev_xs.size(); ++i) {
+    double x_point = x_add_on + interp_horizon / N;
     double y_point = s(x_point);
     x_add_on = x_point;
 
@@ -136,7 +140,7 @@ void Controller::frame_trajectory(const uint &lane) {
   // starting ref
   for (uint i = 1; i <= 3; ++i) {
     vector<double> next_wp =
-        helpers.getXY(s + i * spline_dist, lane_width * (lane + 0.5),
+        helpers.getXY(s + i * interp_interval, lane_width * (lane + 0.5),
                       waypoints[2], waypoints[0], waypoints[1]);
     ptsx.push_back(next_wp[0]);
     ptsy.push_back(next_wp[1]);

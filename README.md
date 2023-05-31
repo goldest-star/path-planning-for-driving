@@ -1,6 +1,6 @@
 # Highway driving
 
-Path planning project of Udacity Self-Driving Car Engineer (cf. [repo](https://github.com/udacity/CarND-Path-Planning-Project)).
+Path planning project of Self-Driving Car Engineer
 
 ![sim-result](static/images/result.gif)
 

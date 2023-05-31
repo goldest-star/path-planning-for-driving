@@ -1,7 +1,5 @@
 # Highway driving
 
-[![License](https://img.shields.io/badge/License-MIT-brightgreen.svg)](LICENSE) [![Codacy Badge](https://api.codacy.com/project/badge/Grade/06ae31c072544e529bac347f24edd1ed)](https://www.codacy.com/manual/frgfm/sdcnd-path-planning?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=frgfm/sdcnd-path-planning&amp;utm_campaign=Badge_Grade) ![Ubuntu build](https://github.com/frgfm/sdcnd-path-planning/workflows/cpp-build/badge.svg) 
-
 Path planning project of Udacity Self-Driving Car Engineer (cf. [repo](https://github.com/udacity/CarND-Path-Planning-Project)).
 
 ![sim-result](static/images/result.gif)
@@ -237,8 +235,6 @@ The previously mentioned implementation yields a smooth driving agent able to ev
 ![sim-result](static/images/result.gif)
 
 The full-length lap recording is available for download in the release attachments:
-
-- [Full lap recording](https://github.com/frgfm/sdcnd-path-planning/releases/download/v0.1.0/lap_recording.mp4)
 
 ## Limitations and improvements
 
